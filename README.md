@@ -249,14 +249,43 @@ export GIT_WORKING_DIR="/path/to/repo"
 - **kotlinx.serialization**: JSON serialization
 - **kotlinx.coroutines**: Asynchronous programming
 
+## Koog Best Practices Implementation
+
+This project implements the patterns and best practices from the official JetBrains AI blog series:
+
+### Tool Structure
+- ✅ **Double underscore naming**: All tools follow `tool__name` convention
+- ✅ **Args classes**: Serializable parameter classes for type safety
+- ✅ **Result classes**: Structured outputs (e.g., `ShellCommandResult`)
+- ✅ **Clear descriptions**: LLM-friendly tool documentation
+
+### Safety & Validation
+- ✅ **ConfirmationHandler**: Configurable approval system for dangerous operations
+- ✅ **Input validation**: Path and content validation before execution
+- ✅ **Error handling**: Meaningful error messages with actionable suggestions
+- ✅ **Security checks**: Prevents path traversal (`..`), validates sizes
+
+### Advanced Features
+- ✅ **Timeout handling**: Commands respect timeout with partial output preservation
+- ✅ **Platform-agnostic**: Shell commands work on Windows and Unix systems
+- ✅ **Configurable modes**: Brave mode for automation, safe mode for interactive use
+- ✅ **Detailed feedback**: Line counts, file sizes, exit codes in results
+
+### System Prompt Engineering
+- ✅ **Clear guidelines**: Step-by-step approach for the AI agent
+- ✅ **Definition of done**: Explicit completion criteria
+- ✅ **Error recovery**: Instructions for handling failures
+- ✅ **Tool usage patterns**: Examples of when to use each tool
+
 ## Advantages of KMP + Koog Migration
 
 1. **Multiplatform Support**: Can now target JVM, JS, WasmJS, Android, and iOS
-2. **Enterprise-Ready**: Built on JetBrains' proven AI framework
-3. **Type-Safe Tools**: Koog provides type-safe tool definitions
-4. **Better Reliability**: Built-in retries and fault-tolerance
+2. **Enterprise-Ready**: Built on JetBrains' proven AI framework following official best practices
+3. **Type-Safe Tools**: Koog provides type-safe tool definitions with Args/Result pattern
+4. **Better Reliability**: Built-in retries, fault-tolerance, and timeout handling
 5. **Observability**: Native support for tracing and monitoring
-6. **Maintainability**: Cleaner architecture with Koog's DSL
+6. **Maintainability**: Cleaner architecture with Koog's DSL and validation system
+7. **Production-Ready**: Implements real-world patterns from JetBrains blog series
 
 ## MCP Integration Details
 
@@ -283,24 +312,35 @@ This project implements **Full MCP Client Integration with Koog**, which:
 - Git operations require MCP Git Server to be running
 - Requires a valid OpenAI API key
 - Write operations require read-write FileSystemProvider
+- Shell command execution is JVM-only (other platforms need platform-specific implementations)
+- Interactive confirmation mode not yet implemented (currently only brave mode or auto-approve)
 
 ## Next Steps
 
-- Add more MCP servers (database, API tools, etc.)
-- Add more platforms (Android, iOS, JS)
-- Implement platform-specific file system providers
-- Add code verification
-- Improve error handling and retry logic
-- Create comprehensive integration tests
-- Add support for more LLMs
+- [ ] Add interactive confirmation prompts for safe mode
+- [ ] Implement shell command tool for other platforms (JS, Native)
+- [ ] Add retry logic with exponential backoff for failed operations
+- [ ] Add more MCP servers (database, API tools, etc.)
+- [ ] Create comprehensive integration tests for timeout scenarios
+- [ ] Add support for more LLMs (Claude, Gemini)
+- [ ] Implement tool usage analytics and observability
+- [ ] Add file diff support for safer editing
+- [ ] Create web UI for interactive agent control
 
 ## References
 
-- [Koog Framework](https://docs.koog.ai/)
+### Official Documentation
+- [Koog Framework Documentation](https://docs.koog.ai/)
 - [JetBrains Koog GitHub](https://github.com/JetBrains/koog)
+- [Building AI Agents in Kotlin - Part 2: A Deeper Dive into Tools](https://blog.jetbrains.com/ai/2025/11/building-ai-agents-in-kotlin-part-2-a-deeper-dive-into-tools/) ⭐ **Key reference for this implementation**
+
+### Protocols & Standards
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/)
 - [MCP Git Server](https://github.com/hernandazevedo/mcp-git-server)
+
+### Related Technologies
 - [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html)
+- [OpenAI API](https://platform.openai.com/docs/api-reference)
 
 ## License
 
