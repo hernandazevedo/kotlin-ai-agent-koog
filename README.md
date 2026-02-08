@@ -82,26 +82,26 @@ The MCP server will start on `http://localhost:8080` by default.
 Run the agent by providing the project path and task:
 
 ```bash
-./gradlew run --args="/path/to/project 'Your task here'"
+./gradlew jvmRun --args="/path/to/project 'Your task here'"
 ```
 
 ### Examples
 
 ```bash
 # Add a new function
-./gradlew run --args="/Users/username/my-project 'Add a function to calculate Fibonacci numbers'"
+./gradlew jvmRun --args="/Users/username/my-project 'Add a function to calculate Fibonacci numbers'"
 
 # Refactor code
-./gradlew run --args="/Users/username/my-project 'Refactor the UserService class to use dependency injection'"
+./gradlew jvmRun --args="/Users/username/my-project 'Refactor the UserService class to use dependency injection'"
 
 # Fix bugs
-./gradlew run --args="/Users/username/my-project 'Fix the bug in the authentication method'"
+./gradlew jvmRun --args="/Users/username/my-project 'Fix the bug in the authentication method'"
 
 # With Git operations (requires MCP server running)
-./gradlew run --args="/Users/username/my-project 'Fix the calculator bug and commit the changes with a descriptive message'"
+./gradlew jvmRun --args="/Users/username/my-project 'Fix the calculator bug and commit the changes with a descriptive message'"
 
 # Check git status
-./gradlew run --args="/Users/username/my-project 'Check the git status and tell me what files have changed'"
+./gradlew jvmRun --args="/Users/username/my-project 'Check the git status and tell me what files have changed'"
 ```
 
 ## Architecture
