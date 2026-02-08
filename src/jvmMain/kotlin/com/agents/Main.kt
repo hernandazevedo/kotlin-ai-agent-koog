@@ -2,6 +2,7 @@ package com.agents
 
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
+import ai.koog.agents.features.eventHandler.feature.handleEvents
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import com.agents.config.BraveConfirmationHandler
@@ -10,7 +11,6 @@ import com.agents.config.SafeConfirmationHandler
 import com.agents.mcp.McpClient
 import com.agents.mcp.McpToolDiscovery
 import com.agents.tools.*
-import kotlinx.coroutines.runBlocking
 
 suspend fun main(args: Array<String>) {
     if (args.size < 2) {
@@ -129,8 +129,14 @@ suspend fun main(args: Array<String>) {
         llmModel = OpenAIModels.Chat.GPT4o,
         toolRegistry = ToolRegistry {
             allTools.forEach { tool(it) }
+        },
+    ) {
+        handleEvents {
+            onToolCallStarting { ctx ->
+                println("Tool '${ctx.toolName}' called with args: ${ctx.toolArgs.toString().take(100)}")
+            }
         }
-    )
+    }
 
     val input = "Project absolute path: $projectPath\n\n## Task\n$task"
 

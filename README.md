@@ -90,6 +90,11 @@ OPENAI_API_KEY=your-api-key-here
 ./gradlew build
 ```
 
+4. Run tests (optional):
+```bash
+./gradlew test
+```
+
 4. (Optional) Start the MCP Git Server for Git operations:
 
 First, clone and setup the [MCP Git Server](https://github.com/hernandazevedo/mcp-git-server):
@@ -223,6 +228,85 @@ src/
 13. **Git Operations**: (Optional) Perform Git operations via MCP tools
 14. **Result Formatting**: Return structured results with helpful error messages
 15. **Summary**: Provide clear summary of changes made
+
+## Testing
+
+The project includes comprehensive test coverage following JetBrains Koog best practices:
+
+### Running Tests
+
+```bash
+# Run all tests
+./gradlew test
+
+# Run only JVM tests
+./gradlew jvmTest
+
+# Run tests with detailed output
+./gradlew test --info
+```
+
+### Test Coverage
+
+**58 tests total** covering:
+
+1. **ConfirmationHandler Tests** (4 tests)
+   - BraveConfirmationHandler approval behavior
+   - SafeConfirmationHandler approval behavior
+   - Both approve and reject scenarios
+
+2. **ToolValidation Tests** (11 tests)
+   - Path validation (empty, blank, path traversal attacks)
+   - Content validation (empty, size limits, special characters)
+   - Security checks
+
+3. **FileSystemTools Tests** (16 tests)
+   - ListDirectoryTool: success, empty, invalid paths, security
+   - ReadFileTool: success, multiline files, file not found
+   - CreateFileTool: success, rejection, validation, permissions
+   - EditFileTool: success, rejection, security, large content
+
+4. **ShellCommandTool Tests** (11 tests)
+   - Simple commands (echo, ls/dir)
+   - Empty command and invalid timeout validation
+   - Confirmation rejection
+   - Working directory support
+   - Command failure handling (exit codes)
+   - Timeout with partial output preservation
+   - Multiline output
+   - Result data structure
+
+5. **MCP Protocol Tests** (16 tests)
+   - JSON-RPC request/response serialization
+   - Error handling structures
+   - Tool definitions
+   - Server info and capabilities
+   - Tool list and call results
+
+### Test Structure
+
+```
+src/
+├── commonTest/kotlin/com/agents/
+│   ├── config/
+│   │   └── ConfirmationHandlerTest.kt
+│   ├── validation/
+│   │   └── ToolValidationTest.kt
+│   └── tools/
+│       └── FileSystemToolsTest.kt
+└── jvmTest/kotlin/com/agents/
+    ├── tools/
+    │   └── ShellCommandToolTest.kt
+    └── mcp/
+        └── McpProtocolTest.kt
+```
+
+### Mock Objects
+
+Tests use mock implementations for isolation:
+- `MockFileSystemProvider`: For testing file operations without real I/O
+- `MockConfirmationHandler`: For testing approval/rejection flows
+- Platform-agnostic shell commands for cross-platform testing
 
 ## Configuration
 
