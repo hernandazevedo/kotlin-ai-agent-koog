@@ -1,34 +1,66 @@
 # Kotlin AI Agent with Koog Framework
 
-A multiplatform AI agent built with Kotlin Multiplatform (KMP) and JetBrains Koog framework. This agent can explore, read, modify code, and perform Git operations.
+A production-ready multiplatform AI agent built with Kotlin Multiplatform (KMP) and JetBrains Koog framework, following best practices from the official [JetBrains AI blog series](https://blog.jetbrains.com/ai/2025/11/building-ai-agents-in-kotlin-part-2-a-deeper-dive-into-tools/).
 
 ## Features
 
 - **Kotlin Multiplatform**: Built with KMP for cross-platform support
-- **Koog Framework**: Uses JetBrains' official AI agent framework
-- **Project Exploration**: Lists directories and files
-- **Code Reading**: Reads and analyzes files
-- **Code Editing**: Modifies files based on tasks
+- **Koog Best Practices**: Implements patterns from JetBrains' official AI agent framework guide
+- **Project Exploration**: Lists directories and files with validation
+- **Code Reading**: Reads and analyzes files with detailed metadata
+- **Code Editing**: Modifies files with confirmation handlers and safety checks
+- **Shell Command Execution**: Runs build tools, tests, and scripts with timeout support
 - **Git Operations**: Status, diff, commit, branch management via MCP
-- **OpenAI Integration**: Uses GPT-4 for intelligent decision-making
+- **OpenAI Integration**: Uses GPT-4o for intelligent decision-making
 - **MCP Integration**: Extensible tool system using Model Context Protocol
+- **Configurable Safety**: Brave mode for automation, safe mode for interactive use
+- **Timeout Handling**: Partial output preservation for long-running commands
+- **Parameter Validation**: Input validation with helpful error messages
 
 ## Available Tools
 
 ### File System Tools (Koog SimpleTool)
-1. **list_directory**: Lists all files and directories in a path
-2. **read_file**: Reads file contents
-3. **edit_file**: Modifies files by replacing their content
-4. **create_file**: Creates new files with specified content
+
+Following JetBrains Koog naming convention (double underscore format):
+
+1. **list__directory**: Lists all files and directories in a path
+   - Input validation for security (blocks `..`, empty paths)
+   - Returns file count and formatted list
+
+2. **read__file**: Reads file contents with metadata
+   - Provides line count and character count
+   - Formatted code block output
+   - Path validation
+
+3. **create__file**: Creates new files with specified content
+   - Confirmation handler for safety
+   - Content size validation (max 1MB)
+   - Returns creation status with metadata
+
+4. **edit__file**: Modifies existing files by replacing content
+   - Confirmation handler with overwrite awareness
+   - Content validation
+   - Suggests reading file first before editing
+
+5. **execute__shell_command**: Executes shell commands with timeout support
+   - Platform-agnostic (Windows: cmd.exe, Unix: /bin/sh)
+   - Configurable timeout (default: 30s)
+   - Partial output preservation on timeout
+   - Working directory support
+   - Confirmation handler for dangerous operations
 
 ### Git Tools (via MCP Server)
-5. **git_status**: Show the working tree status
-6. **git_diff**: Show changes between commits, commit and working tree
-7. **git_commit**: Record changes to the repository
-8. **git_log**: Show commit logs
-9. **git_branch**: List, create, or delete branches
-10. **git_checkout**: Switch branches or restore working tree files
-11. **git_add**: Add file contents to the staging area
+
+Automatically discovered when MCP server is running:
+
+- **git_status**: Show the working tree status
+- **git_diff**: Show changes between commits, commit and working tree
+- **git_commit**: Record changes to the repository
+- **git_log**: Show commit logs
+- **git_branch**: List, create, or delete branches
+- **git_checkout**: Switch branches or restore working tree files
+- **git_add**: Add file contents to the staging area
+- **git_push**: Update remote refs along with associated objects
 
 **Note**: Git tools are automatically discovered when the MCP Git Server is running. If the server is unavailable, the agent falls back to file system tools only.
 
@@ -85,6 +117,14 @@ Run the agent by providing the project path and task:
 ./gradlew jvmRun --args="/path/to/project 'Your task here'"
 ```
 
+### Brave Mode
+
+Enable brave mode to auto-approve all operations (useful for automation):
+
+```bash
+./gradlew jvmRun --args="/path/to/project 'Your task here' --brave"
+```
+
 ### Examples
 
 ```bash
@@ -94,25 +134,46 @@ Run the agent by providing the project path and task:
 # Refactor code
 ./gradlew jvmRun --args="/Users/username/my-project 'Refactor the UserService class to use dependency injection'"
 
-# Fix bugs
-./gradlew jvmRun --args="/Users/username/my-project 'Fix the bug in the authentication method'"
+# Fix bugs with brave mode
+./gradlew jvmRun --args="/Users/username/my-project 'Fix the bug in the authentication method' --brave"
+
+# Build and test (uses execute__shell_command)
+./gradlew jvmRun --args="/Users/username/my-project 'Run the build and fix any compilation errors' --brave"
 
 # With Git operations (requires MCP server running)
 ./gradlew jvmRun --args="/Users/username/my-project 'Fix the calculator bug and commit the changes with a descriptive message'"
 
 # Check git status
 ./gradlew jvmRun --args="/Users/username/my-project 'Check the git status and tell me what files have changed'"
+
+# Complex workflow with timeout
+./gradlew jvmRun --args="/Users/username/my-project 'Run tests, analyze failures, and create a bug report file' --brave"
 ```
 
 ## Architecture
 
 ### Main Components
 
-- **AIAgent (Koog)**: Orchestrates the main execution loop
-- **simpleOpenAIExecutor (Koog)**: Interfaces with the OpenAI API
-- **SimpleTool (Koog)**: Base class for creating tools
+- **AIAgent (Koog)**: Orchestrates the main execution loop with enhanced system prompts
+- **simpleOpenAIExecutor (Koog)**: Interfaces with the OpenAI API (GPT-4o)
+- **SimpleTool (Koog)**: Base class for creating tools with Args/Result pattern
 - **FileSystemProvider**: Abstraction for file system operations (KMP compatible)
 - **FileSystem**: Platform-specific implementations (expect/actual pattern)
+
+### Koog Best Practices Components
+
+Following patterns from [JetBrains AI blog](https://blog.jetbrains.com/ai/2025/11/building-ai-agents-in-kotlin-part-2-a-deeper-dive-into-tools/):
+
+- **ConfirmationHandler**: Interface for confirming potentially dangerous operations
+  - `BraveConfirmationHandler`: Auto-approves all operations (automation mode)
+  - `SafeConfirmationHandler`: Safety checks (interactive mode)
+- **ToolValidation**: Input parameter validation utilities
+  - Path validation (security checks, prevents `..`)
+  - Content validation (size limits, empty checks)
+- **ShellCommandResult**: Structured result class for command execution
+  - Exit code tracking
+  - Timeout status preservation
+  - Partial output capture
 
 ### MCP Integration Components
 
@@ -126,30 +187,42 @@ Run the agent by providing the project path and task:
 ```
 src/
 ├── commonMain/kotlin/com/agents/
-│   ├── FileSystemProvider.kt       # Common interface
+│   ├── FileSystemProvider.kt           # Common interface
+│   ├── config/
+│   │   └── ConfirmationHandler.kt      # Safety confirmation system
+│   ├── validation/
+│   │   └── ToolValidation.kt           # Parameter validation
 │   └── tools/
-│       └── FileSystemTools.kt      # Koog SimpleTool implementations
+│       └── FileSystemTools.kt          # File system SimpleTool implementations
 └── jvmMain/kotlin/com/agents/
-    ├── FileSystemProvider.jvm.kt   # JVM implementation
-    ├── Main.kt                     # Entry point with Koog AIAgent
+    ├── FileSystemProvider.jvm.kt       # JVM implementation
+    ├── Main.kt                         # Entry point with Koog AIAgent
+    ├── tools/
+    │   └── ShellCommandTool.jvm.kt     # Shell command execution with timeout
     └── mcp/
-        ├── McpClient.kt
-        ├── McpProtocol.kt
-        ├── McpToolAdapter.kt       # MCP → Koog adapter
-        └── McpToolDiscovery.kt
+        ├── McpClient.kt                # HTTP client for MCP
+        ├── McpProtocol.kt              # MCP 2024-11-05 protocol
+        ├── McpToolAdapter.kt           # MCP → Koog adapter
+        └── McpToolDiscovery.kt         # Tool auto-discovery
 ```
 
 ### Execution Flow
 
-1. The agent initializes with Koog's AIAgent
-2. Connects to the MCP server (if available)
-3. Auto-discovers Git tools from the MCP server
-4. Receives a task and the project path
-5. Explores the project using `list_directory`
-6. Reads relevant files with `read_file`
-7. Makes necessary modifications via `edit_file` or `create_file`
-8. (Optional) Performs Git operations via MCP tools
-9. Returns a summary of the changes made
+1. **Initialization**: Agent initializes with Koog's AIAgent
+2. **Mode Selection**: Choose brave mode (--brave) or safe mode
+3. **Confirmation Setup**: Configure appropriate ConfirmationHandler
+4. **Tool Registration**: Register file system tools with validation
+5. **MCP Discovery**: Connect to MCP server (if available) and auto-discover Git tools
+6. **Task Processing**: Receive task and project path
+7. **Exploration**: Explore project using `list__directory` with validation
+8. **Analysis**: Read relevant files with `read__file`
+9. **Validation**: Validate all inputs before operations
+10. **Confirmation**: Request approval for write/shell operations (if not in brave mode)
+11. **Execution**: Execute modifications via `create__file`, `edit__file`, or `execute__shell_command`
+12. **Timeout Handling**: Handle long-running commands with partial output preservation
+13. **Git Operations**: (Optional) Perform Git operations via MCP tools
+14. **Result Formatting**: Return structured results with helpful error messages
+15. **Summary**: Provide clear summary of changes made
 
 ## Configuration
 

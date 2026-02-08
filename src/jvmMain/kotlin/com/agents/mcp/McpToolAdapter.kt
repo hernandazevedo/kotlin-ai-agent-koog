@@ -42,15 +42,30 @@ class McpToolAdapter(
             val result = mcpClient.callTool(mcpTool.name, mcpArgs)
 
             if (result.isError) {
-                "Error: ${result.content.firstOrNull()?.text ?: "Unknown error"}"
+                buildErrorResult(result.content.firstOrNull()?.text ?: "Unknown error from MCP server")
             } else {
-                result.content.joinToString("\n") { it.text }
+                buildSuccessResult(result.content)
             }
         } catch (e: McpException) {
-            "MCP error: ${e.message}"
+            buildErrorResult("MCP protocol error: ${e.message}")
         } catch (e: Exception) {
-            "Failed to execute tool '${mcpTool.name}': ${e.message}"
+            buildErrorResult("Failed to execute tool '${mcpTool.name}': ${e.message ?: "Unknown error"}")
         }
+    }
+
+    private fun buildSuccessResult(content: List<TextContent>): String {
+        return content.joinToString("\n") { it.text }
+    }
+
+    private fun buildErrorResult(message: String): String {
+        return """
+            Error: $message
+
+            Suggestion:
+            - Verify the MCP server is running and accessible
+            - Check that the tool parameters are correct
+            - Review the tool's expected input schema
+        """.trimIndent()
     }
 
     /**
