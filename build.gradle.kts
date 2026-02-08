@@ -27,6 +27,10 @@ kotlin {
                 // Koog AI Agent Framework
                 implementation("ai.koog:koog-agents:0.6.1")
 
+                // Koog Features - Observability
+                implementation("ai.koog:agents-features-opentelemetry:0.6.1")
+                implementation("ai.koog:agents-features-trace:0.6.1")
+
                 // Coroutines
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
 

@@ -29,4 +29,12 @@ class CalculatorTest {
         }
         assertEquals(true, divByZeroCaught, "Division by zero should throw IllegalArgumentException.")
     }
+
+    @Test
+    fun testPower() {
+        assertEquals(8, calculator.power(2, 3))
+        assertEquals(1, calculator.power(5, 0))
+        assertEquals(0, calculator.power(0, 5))
+        assertEquals(1, calculator.power(0, 0)) // typically 0^0 is considered as 1
+    }
 }
