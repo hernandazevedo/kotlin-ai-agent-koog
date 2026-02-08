@@ -1,0 +1,33 @@
+# Gradle
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+.claude/
+
+# macOS
+.DS_Store
+
+# Environment files
+.env
+local.properties
+
+# Kotlin
+*.kt.swp
+*.kt~
+
+# Logs
+*.log
