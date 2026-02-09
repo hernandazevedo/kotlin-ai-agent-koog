@@ -3,6 +3,9 @@ package com.agents
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.eventHandler.feature.handleEvents
+import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
+import ai.koog.agents.features.opentelemetry.feature.*
+import ai.koog.agents.features.opentelemetry.integration.langfuse.addLangfuseExporter
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import com.agents.config.BraveConfirmationHandler
@@ -11,6 +14,24 @@ import com.agents.config.SafeConfirmationHandler
 import com.agents.mcp.McpClient
 import com.agents.mcp.McpToolDiscovery
 import com.agents.tools.*
+import java.util.UUID
+
+/**
+ * Helper function to read environment variables with fallback to .env file
+ * Following the pattern from JetBrains Koog observability best practices
+ */
+fun getEnvOrDotEnv(key: String): String? {
+    return System.getenv(key) ?: run {
+        val envFile = java.io.File(".env")
+        if (envFile.exists()) {
+            envFile.readLines()
+                .firstOrNull { it.startsWith("$key=") }
+                ?.substringAfter("$key=")
+        } else {
+            null
+        }
+    }
+}
 
 suspend fun main(args: Array<String>) {
     if (args.size < 2) {
@@ -25,17 +46,39 @@ suspend fun main(args: Array<String>) {
     val task = args[1]
     val braveMode = args.getOrNull(2) == "--brave"
 
-    val apiKey = System.getenv("OPENAI_API_KEY") ?: run {
-        // Fallback to .env file
-        val envFile = java.io.File(".env")
-        if (envFile.exists()) {
-            envFile.readLines()
-                .firstOrNull { it.startsWith("OPENAI_API_KEY=") }
-                ?.substringAfter("OPENAI_API_KEY=")
-                ?: throw IllegalStateException("OPENAI_API_KEY not found in .env file")
-        } else {
-            throw IllegalStateException("OPENAI_API_KEY environment variable not set and .env file not found")
-        }
+    // Read OpenAI API key
+    val apiKey = getEnvOrDotEnv("OPENAI_API_KEY")
+        ?: throw IllegalStateException("OPENAI_API_KEY environment variable not set and not found in .env file")
+
+    // Read Langfuse configuration for observability
+    val langfusePublicKey = getEnvOrDotEnv("LANGFUSE_PUBLIC_KEY")
+    val langfuseSecretKey = getEnvOrDotEnv("LANGFUSE_SECRET_KEY")
+    val langfuseBaseUrl = getEnvOrDotEnv("LANGFUSE_BASE_URL")
+
+    // Generate a unique session ID for this agent run
+    val sessionId = "agent-run-${UUID.randomUUID().toString().take(8)}"
+
+    // Check if Langfuse is configured
+    val langfuseConfigured = langfusePublicKey != null && langfuseSecretKey != null && langfuseBaseUrl != null
+    if (langfuseConfigured) {
+        println("[Observability] Langfuse tracking enabled on host $langfuseBaseUrl - Session ID: $sessionId")
+
+        // Configure OpenTelemetry to send traces to Langfuse via OTLP
+        // Langfuse accepts OTLP traces at /api/public/otel endpoint
+        val otlpEndpoint = "${langfuseBaseUrl!!.trimEnd('/')}/api/public/otel"
+
+        // Create Basic Auth header: base64(publicKey:secretKey)
+        val authString = "$langfusePublicKey:$langfuseSecretKey"
+        val authHeader = "Basic " + java.util.Base64.getEncoder().encodeToString(authString.toByteArray())
+
+        // Set OpenTelemetry environment variables for OTLP exporter
+        System.setProperty("OTEL_EXPORTER_OTLP_ENDPOINT", otlpEndpoint)
+        System.setProperty("OTEL_EXPORTER_OTLP_HEADERS", "Authorization=$authHeader")
+        System.setProperty("OTEL_EXPORTER_OTLP_PROTOCOL", "http/protobuf")
+
+        println("[Observability] OTLP endpoint: $otlpEndpoint")
+    } else {
+        println("[Observability] Langfuse not configured - skipping telemetry")
     }
 
     // Configure confirmation handler based on mode
@@ -68,7 +111,7 @@ suspend fun main(args: Array<String>) {
     // Combine all tools
     val allTools = fileSystemTools + mcpTools
 
-    // Create Koog AI Agent
+    // Create Koog AI Agent with observability
     val agent = AIAgent(
         promptExecutor = simpleOpenAIExecutor(apiKey),
         systemPrompt = """
@@ -131,6 +174,24 @@ suspend fun main(args: Array<String>) {
             allTools.forEach { tool(it) }
         },
     ) {
+        // Install OpenTelemetry with Langfuse for observability
+        // Following JetBrains Koog best practices from blog article Part 3
+        // Traces are sent to Langfuse via OTLP (configured via system properties above)
+        if (langfuseConfigured) {
+            install(OpenTelemetry) {
+                setVerbose(true) // Send full strings instead of HIDDEN placeholders
+                addLangfuseExporter(
+                    langfuseUrl = langfuseBaseUrl,
+                    langfusePublicKey = langfusePublicKey,
+                    langfuseSecretKey = langfuseSecretKey,
+                    traceAttributes = listOf(
+                        CustomAttribute("langfuse.session.id", System.getenv("LANGFUSE_SESSION_ID") ?: ""),
+                    )
+                )
+            }
+        }
+
+        // Handle events for console logging
         handleEvents {
             onToolCallStarting { ctx ->
                 println("Tool '${ctx.toolName}' called with args: ${ctx.toolArgs.toString().take(100)}")

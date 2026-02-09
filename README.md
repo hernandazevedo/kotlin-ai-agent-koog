@@ -16,6 +16,7 @@ A production-ready multiplatform AI agent built with Kotlin Multiplatform (KMP) 
 - **Configurable Safety**: Brave mode for automation, safe mode for interactive use
 - **Timeout Handling**: Partial output preservation for long-running commands
 - **Parameter Validation**: Input validation with helpful error messages
+- **Observability**: Full tracing with Langfuse and OpenTelemetry for debugging and cost tracking
 
 ## Available Tools
 
@@ -308,11 +309,77 @@ Tests use mock implementations for isolation:
 - `MockConfirmationHandler`: For testing approval/rejection flows
 - Platform-agnostic shell commands for cross-platform testing
 
+## Observability
+
+This project implements comprehensive observability using **Langfuse** and **OpenTelemetry**, following the patterns from [JetBrains Koog blog Part 3: Under Observation](https://blog.jetbrains.com/ai/2025/12/building-ai-agents-in-kotlin-part-3-under-observation/).
+
+### Features
+
+- **Full Trace Visibility**: Track every LLM call, tool execution, and agent decision
+- **Cost Tracking**: Monitor token usage and costs per run
+- **Session Grouping**: Group related agent runs for analysis
+- **Performance Metrics**: Measure execution time for each operation
+- **Tool Call Logging**: See arguments and results for every tool call
+
+### Setup Langfuse
+
+1. Create a free account at [cloud.langfuse.com](https://cloud.langfuse.com)
+2. Generate API keys from your project settings
+3. Add to `.env` file:
+
+```bash
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+LANGFUSE_BASE_URL=https://us.cloud.langfuse.com
+```
+
+### How It Works
+
+When Langfuse is configured, the agent automatically:
+- Generates a unique session ID for each run (`agent-run-xxxxxxxx`)
+- Tracks all OpenAI API calls with token usage
+- Records tool executions with parameters and results
+- Exports traces to Langfuse for visualization
+- Logs detailed information to console (when verbose mode is enabled)
+
+### Viewing Traces
+
+After running the agent, visit your Langfuse dashboard to:
+- View the complete execution graph
+- Analyze token usage and costs
+- Debug tool call sequences
+- Compare runs using session IDs
+- Export data for evaluation
+
+### Console Output Example
+
+```
+[Observability] Langfuse tracking enabled - Session ID: agent-run-b46626d0
+...
+INFO: 'chat gpt-4o' : ...
+  gen_ai.usage.input_tokens=1053
+  gen_ai.usage.output_tokens=31
+...
+INFO: 'execute_tool list__directory' : ...
+  gen_ai.tool.call.result="Contents of '/path' (2 items)..."
+```
+
+### Disabling Observability
+
+Simply don't set the Langfuse environment variables. The agent will detect this and run without observability:
+
+```
+[Observability] Langfuse not configured - skipping telemetry
+```
+
 ## Configuration
 
 ### Environment Variables
 
 - `OPENAI_API_KEY`: Your OpenAI API key (required)
+- `LANGFUSE_PUBLIC_KEY`: Langfuse public API key (optional, for observability)
+- `LANGFUSE_SECRET_KEY`: Langfuse secret API key (optional, for observability)
+- `LANGFUSE_BASE_URL`: Langfuse server URL (optional, default: `https://us.cloud.langfuse.com`)
 - `MCP_SERVER_URL`: MCP server URL (default: `http://localhost:8080/mcp`)
 - `GIT_WORKING_DIR`: Working directory for Git operations on MCP server side
 
@@ -327,8 +394,13 @@ export GIT_WORKING_DIR="/path/to/repo"
 ## Technology Stack
 
 - **Kotlin Multiplatform**: Cross-platform development
-- **Koog 0.6.0**: JetBrains AI agent framework
+- **Koog 0.6.1**: JetBrains AI agent framework
+  - `koog-agents`: Core agent functionality
+  - `agents-features-opentelemetry`: Observability support
+  - `agents-features-trace`: Tracing capabilities
 - **OpenAI GPT-4o**: Language model for intelligent decisions
+- **Langfuse**: Observability and tracing platform
+- **OpenTelemetry**: Industry-standard observability framework
 - **OkHttp**: HTTP client for MCP communication
 - **kotlinx.serialization**: JSON serialization
 - **kotlinx.coroutines**: Asynchronous programming
@@ -360,6 +432,14 @@ This project implements the patterns and best practices from the official JetBra
 - ✅ **Definition of done**: Explicit completion criteria
 - ✅ **Error recovery**: Instructions for handling failures
 - ✅ **Tool usage patterns**: Examples of when to use each tool
+
+### Observability
+- ✅ **OpenTelemetry integration**: Full trace visibility into agent execution
+- ✅ **Langfuse support**: Cloud-based observability platform
+- ✅ **Session tracking**: Unique IDs for grouping related runs
+- ✅ **Cost tracking**: Monitor token usage and API costs
+- ✅ **Tool call tracing**: Detailed logging of all tool executions
+- ✅ **Automatic detection**: Gracefully degrades when observability is not configured
 
 ## Advantages of KMP + Koog Migration
 
@@ -416,7 +496,13 @@ This project implements **Full MCP Client Integration with Koog**, which:
 ### Official Documentation
 - [Koog Framework Documentation](https://docs.koog.ai/)
 - [JetBrains Koog GitHub](https://github.com/JetBrains/koog)
-- [Building AI Agents in Kotlin - Part 2: A Deeper Dive into Tools](https://blog.jetbrains.com/ai/2025/11/building-ai-agents-in-kotlin-part-2-a-deeper-dive-into-tools/) ⭐ **Key reference for this implementation**
+- [Building AI Agents in Kotlin - Part 2: A Deeper Dive into Tools](https://blog.jetbrains.com/ai/2025/11/building-ai-agents-in-kotlin-part-2-a-deeper-dive-into-tools/) ⭐ **Tool implementation patterns**
+- [Building AI Agents in Kotlin - Part 3: Under Observation](https://blog.jetbrains.com/ai/2025/12/building-ai-agents-in-kotlin-part-3-under-observation/) ⭐ **Observability implementation**
+
+### Observability & Monitoring
+- [Langfuse Documentation](https://langfuse.com/docs)
+- [Langfuse Cloud](https://cloud.langfuse.com)
+- [OpenTelemetry](https://opentelemetry.io/)
 
 ### Protocols & Standards
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/)

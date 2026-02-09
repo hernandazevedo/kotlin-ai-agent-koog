@@ -13,8 +13,12 @@ class Calculator {
         if (b == 0) throw IllegalArgumentException("Cannot divide by zero.")
         return a / b
     }
-
+    
     fun multiply(a: Int, b: Int): Int {
         return a * b
+    }
+
+    fun power(base: Int, exponent: Int): Int {
+        return Math.pow(base.toDouble(), exponent.toDouble()).toInt()
     }
 }
