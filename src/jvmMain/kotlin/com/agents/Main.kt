@@ -3,7 +3,9 @@ package com.agents
 import ai.koog.agents.core.agent.AIAgent
 import ai.koog.agents.core.tools.ToolRegistry
 import ai.koog.agents.features.eventHandler.feature.handleEvents
+import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.feature.*
+import ai.koog.agents.features.opentelemetry.integration.langfuse.addLangfuseExporter
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import com.agents.config.BraveConfirmationHandler
@@ -177,11 +179,15 @@ suspend fun main(args: Array<String>) {
         // Traces are sent to Langfuse via OTLP (configured via system properties above)
         if (langfuseConfigured) {
             install(OpenTelemetry) {
-                setVerbose(true) // Enable console logging
-                // OTLP exporter is auto-configured via system properties:
-                // - OTEL_EXPORTER_OTLP_ENDPOINT
-                // - OTEL_EXPORTER_OTLP_HEADERS
-                // - OTEL_EXPORTER_OTLP_PROTOCOL
+                setVerbose(true) // Send full strings instead of HIDDEN placeholders
+                addLangfuseExporter(
+                    langfuseUrl = langfuseBaseUrl,
+                    langfusePublicKey = langfusePublicKey,
+                    langfuseSecretKey = langfuseSecretKey,
+                    traceAttributes = listOf(
+                        CustomAttribute("langfuse.session.id", System.getenv("LANGFUSE_SESSION_ID") ?: ""),
+                    )
+                )
             }
         }
 
