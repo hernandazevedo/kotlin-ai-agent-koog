@@ -364,6 +364,8 @@ INFO: 'execute_tool list__directory' : ...
   gen_ai.tool.call.result="Contents of '/path' (2 items)..."
 ```
 
+![Langfuse Dashboard](assets/img.png)
+
 ### Disabling Observability
 
 Simply don't set the Langfuse environment variables. The agent will detect this and run without observability:
