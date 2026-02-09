@@ -2,6 +2,8 @@
 
 A production-ready multiplatform AI agent built with Kotlin Multiplatform (KMP) and JetBrains Koog framework, following best practices from the official [JetBrains AI blog series](https://blog.jetbrains.com/ai/2025/11/building-ai-agents-in-kotlin-part-2-a-deeper-dive-into-tools/).
 
+![Langfuse Dashboard](assets/img.png)
+
 ## Features
 
 - **Kotlin Multiplatform**: Built with KMP for cross-platform support
@@ -363,8 +365,6 @@ INFO: 'chat gpt-4o' : ...
 INFO: 'execute_tool list__directory' : ...
   gen_ai.tool.call.result="Contents of '/path' (2 items)..."
 ```
-
-![Langfuse Dashboard](assets/img.png)
 
 ### Disabling Observability
 
