@@ -13,6 +13,7 @@ import com.agents.config.ConfirmationHandler
 import com.agents.config.SafeConfirmationHandler
 import com.agents.mcp.McpClient
 import com.agents.mcp.McpToolDiscovery
+import com.agents.subagents.createCodeSearchAgentTool
 import com.agents.tools.*
 import java.util.UUID
 
@@ -108,8 +109,11 @@ suspend fun main(args: Array<String>) {
     val mcpDiscovery = McpToolDiscovery(mcpClient, verbose = true)
     val mcpTools = mcpDiscovery.discoverTools()
 
-    // Combine all tools
-    val allTools = fileSystemTools + mcpTools
+    // Create code search sub-agent tool
+    val codeSearchAgentTool = createCodeSearchAgentTool(apiKey)
+
+    // Combine all tools (including sub-agent tool)
+    val allTools = fileSystemTools + mcpTools + codeSearchAgentTool
 
     // Create Koog AI Agent with observability
     val agent = AIAgent(
@@ -136,16 +140,21 @@ suspend fun main(args: Array<String>) {
             - git_add: Add file contents to the staging area
             - git_push: Update remote refs along with associated objects
 
+            ### Sub-Agent Tools
+            - __find_in_codebase_agent__: Specialized agent for searching and finding code in the codebase
+              Use this when you need to find specific implementations, patterns, or understand project structure
+
             ## Your Approach
 
-            1. **Explore**: Start by exploring the project structure with list__directory
-            2. **Understand**: Read relevant files to understand the current implementation
-            3. **Plan**: Think through the changes needed before making them
-            4. **Implement**: Use create__file for new files, edit__file for existing files
-            5. **Build/Test**: Use execute__shell_command to run builds, tests, or other tools
-            6. **Verify**: After changes, consider reading files back to verify
-            7. **Commit**: Use git tools when appropriate to track changes
-            8. **Report**: Provide a clear summary of what you changed and why
+            1. **Search**: When you need to find code, use __find_in_codebase_agent__ to delegate search tasks
+            2. **Explore**: Use list__directory to explore project structure when you know what you're looking for
+            3. **Understand**: Read relevant files to understand the current implementation
+            4. **Plan**: Think through the changes needed before making them
+            5. **Implement**: Use create__file for new files, edit__file for existing files
+            6. **Build/Test**: Use execute__shell_command to run builds, tests, or other tools
+            7. **Verify**: After changes, consider reading files back to verify
+            8. **Commit**: Use git tools when appropriate to track changes
+            9. **Report**: Provide a clear summary of what you changed and why
 
             ## Important Guidelines
 
