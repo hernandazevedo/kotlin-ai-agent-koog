@@ -167,6 +167,7 @@ Enable brave mode to auto-approve all operations (useful for automation):
 - **SimpleTool (Koog)**: Base class for creating tools with Args/Result pattern
 - **FileSystemProvider**: Abstraction for file system operations (KMP compatible)
 - **FileSystem**: Platform-specific implementations (expect/actual pattern)
+- **Sub-Agents**: Specialized agents for focused tasks (see [Sub-Agents Documentation](docs/SUBAGENTS.md))
 
 ### Koog Best Practices Components
 
@@ -500,6 +501,7 @@ This project implements **Full MCP Client Integration with Koog**, which:
 - [JetBrains Koog GitHub](https://github.com/JetBrains/koog)
 - [Building AI Agents in Kotlin - Part 2: A Deeper Dive into Tools](https://blog.jetbrains.com/ai/2025/11/building-ai-agents-in-kotlin-part-2-a-deeper-dive-into-tools/) ⭐ **Tool implementation patterns**
 - [Building AI Agents in Kotlin - Part 3: Under Observation](https://blog.jetbrains.com/ai/2025/12/building-ai-agents-in-kotlin-part-3-under-observation/) ⭐ **Observability implementation**
+- [Building AI Agents in Kotlin - Part 4: Delegation and Sub-Agents](https://blog.jetbrains.com/ai/2026/01/building-ai-agents-in-kotlin-part-4-delegation-and-sub-agents/) ⭐ **Sub-agent architecture**
 
 ### Observability & Monitoring
 - [Langfuse Documentation](https://langfuse.com/docs)

@@ -194,7 +194,7 @@ suspend fun main(args: Array<String>) {
                     langfusePublicKey = langfusePublicKey,
                     langfuseSecretKey = langfuseSecretKey,
                     traceAttributes = listOf(
-                        CustomAttribute("langfuse.session.id", System.getenv("LANGFUSE_SESSION_ID") ?: ""),
+                        CustomAttribute("langfuse.session.id", sessionId),
                     )
                 )
             }
@@ -215,7 +215,16 @@ suspend fun main(args: Array<String>) {
     println("Task: $task")
     println("=" .repeat(80))
 
-    val result = agent.run(input)
+    // Use try-finally to ensure agent is properly closed
+    val result = try {
+        agent.run(input)
+    } finally {
+        // Close the agent to flush telemetry traces
+        agent.close()
+        if (langfuseConfigured) {
+            println("[Observability] Agent closed, traces flushed to Langfuse")
+        }
+    }
 
     println("\n" + "=".repeat(80))
     println("FINAL RESULT:")
