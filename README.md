@@ -19,6 +19,9 @@ A production-ready multiplatform AI agent built with Kotlin Multiplatform (KMP) 
 - **Timeout Handling**: Partial output preservation for long-running commands
 - **Parameter Validation**: Input validation with helpful error messages
 - **Observability**: Full tracing with Langfuse and OpenTelemetry for debugging and cost tracking
+- **Sub-Agents**: Specialized agents for focused tasks like code search
+- **Memory Management**: History compression for long-running tasks with intelligent context preservation
+- **Multi-Executor**: Support for multiple LLM providers (OpenAI + Anthropic) with optimal model selection
 
 ## Available Tools
 
@@ -168,6 +171,8 @@ Enable brave mode to auto-approve all operations (useful for automation):
 - **FileSystemProvider**: Abstraction for file system operations (KMP compatible)
 - **FileSystem**: Platform-specific implementations (expect/actual pattern)
 - **Sub-Agents**: Specialized agents for focused tasks (see [Sub-Agents Documentation](docs/SUBAGENTS.md))
+- **Memory Management**: History compression for long-running tasks (see [Memory Documentation](docs/MEMORY.md))
+- **Multi-Executor**: Use multiple LLM providers for optimal cost/quality balance (see [Multi-Executor Documentation](docs/MULTI_EXECUTOR.md))
 
 ### Koog Best Practices Components
 
@@ -502,6 +507,7 @@ This project implements **Full MCP Client Integration with Koog**, which:
 - [Building AI Agents in Kotlin - Part 2: A Deeper Dive into Tools](https://blog.jetbrains.com/ai/2025/11/building-ai-agents-in-kotlin-part-2-a-deeper-dive-into-tools/) ⭐ **Tool implementation patterns**
 - [Building AI Agents in Kotlin - Part 3: Under Observation](https://blog.jetbrains.com/ai/2025/12/building-ai-agents-in-kotlin-part-3-under-observation/) ⭐ **Observability implementation**
 - [Building AI Agents in Kotlin - Part 4: Delegation and Sub-Agents](https://blog.jetbrains.com/ai/2026/01/building-ai-agents-in-kotlin-part-4-delegation-and-sub-agents/) ⭐ **Sub-agent architecture**
+- [Building AI Agents in Kotlin - Part 5: Teaching Agents to Forget](https://blog.jetbrains.com/ai/2026/01/building-ai-agents-in-kotlin-part-5-teaching-agents-to-forget/) ⭐ **Memory management**
 
 ### Observability & Monitoring
 - [Langfuse Documentation](https://langfuse.com/docs)

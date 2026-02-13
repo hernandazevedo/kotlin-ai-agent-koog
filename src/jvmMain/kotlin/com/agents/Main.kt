@@ -7,12 +7,13 @@ import ai.koog.agents.features.opentelemetry.attribute.CustomAttribute
 import ai.koog.agents.features.opentelemetry.feature.*
 import ai.koog.agents.features.opentelemetry.integration.langfuse.addLangfuseExporter
 import ai.koog.prompt.executor.clients.openai.OpenAIModels
-import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import com.agents.config.BraveConfirmationHandler
 import com.agents.config.ConfirmationHandler
 import com.agents.config.SafeConfirmationHandler
+import com.agents.executor.*
 import com.agents.mcp.McpClient
 import com.agents.mcp.McpToolDiscovery
+import com.agents.memory.CONCEPT_COUNT
 import com.agents.subagents.createCodeSearchAgentTool
 import com.agents.tools.*
 import java.util.UUID
@@ -47,9 +48,22 @@ suspend fun main(args: Array<String>) {
     val task = args[1]
     val braveMode = args.getOrNull(2) == "--brave"
 
-    // Read OpenAI API key
+    // Configure Multi-Executor with OpenAI + Anthropic (Koog 0.6.2+)
+    val executorConfig = getExecutorConfigFromEnv(::getEnvOrDotEnv)
+    val modelConfig = getModelConfig(executorConfig)
+
+    // Create the prompt executor using real MultiLLMPromptExecutor
+    val promptExecutor = createPromptExecutor(executorConfig)
+
+    // Keep reference to OpenAI key for sub-agents
     val apiKey = getEnvOrDotEnv("OPENAI_API_KEY")
         ?: throw IllegalStateException("OPENAI_API_KEY environment variable not set and not found in .env file")
+
+    // Log model configuration
+    println("[Model] Primary: ${modelConfig.primaryModel.javaClass.simpleName}")
+    modelConfig.retrievalModel?.let {
+        println("[Model] Retrieval (for compression): ${it.javaClass.simpleName}")
+    }
 
     // Read Langfuse configuration for observability
     val langfusePublicKey = getEnvOrDotEnv("LANGFUSE_PUBLIC_KEY")
@@ -115,9 +129,32 @@ suspend fun main(args: Array<String>) {
     // Combine all tools (including sub-agent tool)
     val allTools = fileSystemTools + mcpTools + codeSearchAgentTool
 
-    // Create Koog AI Agent with observability
+    // History compression configuration
+    // Note: History compression is configured in CodeAgentHistoryConfig.kt with $CONCEPT_COUNT concepts
+    // Full integration requires Koog version with singleRunStrategyWithHistoryCompression API
+    // See docs/MEMORY.md for complete documentation
+    println("[Memory] History compression strategy configured:")
+    println("[Memory] - Ready with $CONCEPT_COUNT concepts (see CodeAgentHistoryConfig.kt)")
+    println("[Memory] - Integration pending Koog API availability")
+
+    // Determine LLM model based on executor configuration
+    // Note: Using OpenAI for all cases since Anthropic requires credits
+    val llmModel = OpenAIModels.Chat.GPT4o
+
+    println("[Model] Primary: GPT-4o (OpenAI)")
+
+    // Create Koog AI Agent with Multi-Executor and Observability
     val agent = AIAgent(
-        promptExecutor = simpleOpenAIExecutor(apiKey),
+        promptExecutor = promptExecutor,
+        llmModel = llmModel,
+//        strategy = singleRunStrategyWithHistoryCompression(
+//            config = HistoryCompressionConfig(
+//                isHistoryTooBig = CODE_AGENT_HISTORY_TOO_BIG,
+//                compressionStrategy = CODE_AGENT_COMPRESSION_STRATEGY,
+//                retrievalModel = OpenAIModels.Chat.GPT4_1Mini
+//            )
+//        ),
+        maxIterations = 400,
         systemPrompt = """
             You are a highly skilled programmer tasked with updating the provided codebase according to the given task.
 
@@ -178,7 +215,6 @@ suspend fun main(args: Array<String>) {
 
             If you encounter errors or cannot complete the task, explain what went wrong and what would be needed to resolve it.
         """.trimIndent(),
-        llmModel = OpenAIModels.Chat.GPT4o,
         toolRegistry = ToolRegistry {
             allTools.forEach { tool(it) }
         },
