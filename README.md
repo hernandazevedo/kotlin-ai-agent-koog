@@ -119,31 +119,70 @@ The MCP server will start on `http://localhost:8080` by default.
 
 ## Usage
 
-Run the agent by providing the project path and task:
+### Quick Start (Recommended)
 
+Use the provided shell scripts for the best CLI experience:
+
+```bash
+# Quick run (auto-builds and executes)
+./run-agent.sh /path/to/project "Your task here"
+
+# Interactive mode with diff preview
+./run-interactive.sh /path/to/project "Your task here"
+
+# With user tracking for Langfuse
+./run-interactive.sh /path/to/project "Your task" --user dev@example.com
+```
+
+These scripts automatically:
+- Build the project
+- Generate an executable wrapper with full stdin support
+- Run the agent directly via `java -cp` (bypassing Gradle)
+
+### Manual Execution
+
+**Option 1: Direct execution (best for interactive mode)**
+```bash
+# Build the run script
+./gradlew createRunScript
+
+# Execute with full stdin support
+./build/bin/kotlin-ai-agent-koog /path/to/project "Your task" --interactive
+```
+
+**Option 2: Via Gradle (limited stdin)**
 ```bash
 ./gradlew jvmRun --args="/path/to/project 'Your task here'"
 ```
 
-### Interactive Mode (NEW!)
+**Note:** Interactive mode requires stdin. Use `./run-interactive.sh` or direct execution for best results.
+
+### Execution Modes
+
+#### Interactive Mode (NEW!)
 
 Review and approve changes with visual diff preview before execution:
 
 ```bash
-# Using the wrapper script (recommended for interactive mode)
 ./run-interactive.sh example-project "Add error handling to Calculator"
-
-# Or run binary directly
-./gradlew installDist
-./build/install/kotlin-ai-agent-koog/bin/kotlin-ai-agent-koog example-project "Your task" --interactive
 ```
 
-**Note:** Interactive mode requires stdin. Using `./gradlew jvmRun` directly won't work due to Gradle's stdin handling. See [Troubleshooting Guide](docs/INTERACTIVE_MODE_TROUBLESHOOTING.md).
+Features:
+- ✅ Shows colored diff before each file operation
+- ✅ Approve/reject individual operations
+- ✅ View full diff with `v` command
+- ✅ Switch to brave mode mid-execution with `a`
+- ✅ Works with `System.console()` for better Gradle compatibility
 
-### Brave Mode
+#### Brave Mode
 
-Enable brave mode to auto-approve all operations (useful for automation):
+Auto-approve all operations (useful for automation):
 
+```bash
+./run-agent.sh /path/to/project "Your task" --brave
+```
+
+Or manually:
 ```bash
 ./gradlew jvmRun --args="/path/to/project 'Your task here' --brave"
 ```
