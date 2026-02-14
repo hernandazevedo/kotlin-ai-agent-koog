@@ -50,6 +50,9 @@ kotlin {
             dependencies {
                 // HTTP Client for MCP
                 implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+                // JLine for interactive terminal UI
+                implementation("org.jline:jline:3.27.1")
             }
         }
 

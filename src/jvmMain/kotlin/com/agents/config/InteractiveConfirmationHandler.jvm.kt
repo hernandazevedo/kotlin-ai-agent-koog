@@ -8,7 +8,8 @@ import kotlinx.coroutines.withContext
  * Shows diff preview before file operations
  */
 class InteractiveConfirmationHandler(
-    private val useColors: Boolean = true
+    private val useColors: Boolean = true,
+    private val useArrowKeys: Boolean = true
 ) : ConfirmationHandler {
 
     private var alwaysApprove = false
@@ -16,6 +17,7 @@ class InteractiveConfirmationHandler(
     private var stdinAvailable: Boolean? = null // Cache stdin availability check
     private var consecutiveNulls = 0 // Track consecutive null reads
     private val maxConsecutiveNulls = 3 // Max attempts before giving up
+    private val interactiveMenu = InteractiveMenu()
 
     override suspend fun requestFileWriteConfirmation(
         path: String,
@@ -98,21 +100,31 @@ class InteractiveConfirmationHandler(
         oldContent: String?,
         newContent: String?
     ): FileWriteConfirmation {
-        while (true) {
-            print("Your choice: ")
-            System.out.flush() // Force flush to ensure prompt is shown
+        // Try arrow key menu first if enabled
+        if (useArrowKeys) {
+            val choice = try {
+                interactiveMenu.showMenu()
+            } catch (e: Exception) {
+                null // Fallback to text menu
+            }
 
-            val input = try {
-                // Use System.console() for better Gradle compatibility
-                // Falls back to readlnOrNull() if console is not available
-                (System.console()?.readLine() ?: readlnOrNull())?.trim()?.lowercase()
+            if (choice != null) {
+                val result = handleMenuChoice(choice, oldContent, newContent)
+                if (result != null) return result
+            }
+        }
+
+        // Fallback to text-based menu
+        while (true) {
+            val choice = try {
+                interactiveMenu.showTextMenu()
             } catch (e: Exception) {
                 println("\n❌ Error reading input: ${e.message}")
                 println("⚠️  Defaulting to REJECT for safety")
                 return FileWriteConfirmation.Rejected
             }
 
-            if (input == null) {
+            if (choice == null) {
                 consecutiveNulls++
                 if (consecutiveNulls >= maxConsecutiveNulls) {
                     println("\n⚠️  No input available after $maxConsecutiveNulls attempts (stdin closed or EOF)")
@@ -120,7 +132,7 @@ class InteractiveConfirmationHandler(
                     println("💡 Tip: Use --brave flag or run outside Gradle")
                     return FileWriteConfirmation.Rejected
                 }
-                // Give user a moment to provide input
+                println("⚠️  Please enter a valid choice")
                 Thread.sleep(100)
                 continue
             }
@@ -128,38 +140,45 @@ class InteractiveConfirmationHandler(
             // Reset counter on successful read
             consecutiveNulls = 0
 
-            when (input) {
-                "y", "yes" -> {
-                    println("✅ Operation approved")
-                    return FileWriteConfirmation.Approved
-                }
-                "n", "no" -> {
-                    println("❌ Operation rejected")
-                    return FileWriteConfirmation.Rejected
-                }
-                "a", "always" -> {
-                    println("⚡ Brave mode enabled - all operations will be auto-approved")
-                    alwaysApprove = true
-                    return FileWriteConfirmation.Approved
-                }
-                "d", "deny" -> {
-                    println("🛑 All operations will be rejected")
-                    alwaysDeny = true
-                    return FileWriteConfirmation.Rejected
-                }
-                "v", "view" -> {
-                    showFullDiff(oldContent, newContent)
-                    println() // Add spacing after diff
-                }
-                "?", "help" -> {
-                    showHelp()
-                }
-                "" -> {
-                    println("⚠️  Please enter a choice (y/n/a/d/v/?)")
-                }
-                else -> {
-                    println("❌ Invalid option: '$input'. Please choose y/n/a/d/v/?")
-                }
+            val result = handleMenuChoice(choice, oldContent, newContent)
+            if (result != null) {
+                return result
+            }
+        }
+    }
+
+    private fun handleMenuChoice(
+        choice: InteractiveMenu.Choice,
+        oldContent: String?,
+        newContent: String?
+    ): FileWriteConfirmation? {
+        return when (choice) {
+            InteractiveMenu.Choice.YES -> {
+                println("✅ Operation approved")
+                FileWriteConfirmation.Approved
+            }
+            InteractiveMenu.Choice.NO -> {
+                println("❌ Operation rejected")
+                FileWriteConfirmation.Rejected
+            }
+            InteractiveMenu.Choice.ALWAYS -> {
+                println("⚡ Brave mode enabled - all operations will be auto-approved")
+                alwaysApprove = true
+                FileWriteConfirmation.Approved
+            }
+            InteractiveMenu.Choice.DENY -> {
+                println("🛑 All operations will be rejected")
+                alwaysDeny = true
+                FileWriteConfirmation.Rejected
+            }
+            InteractiveMenu.Choice.VIEW -> {
+                showFullDiff(oldContent, newContent)
+                println()
+                null // Continue loop
+            }
+            InteractiveMenu.Choice.HELP -> {
+                showHelp()
+                null // Continue loop
             }
         }
     }
