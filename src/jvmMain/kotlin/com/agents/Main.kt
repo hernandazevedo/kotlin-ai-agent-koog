@@ -36,16 +36,34 @@ fun getEnvOrDotEnv(key: String): String? {
 
 suspend fun main(args: Array<String>) {
     if (args.size < 2) {
-        println("Usage: kotlin-ai-agent-koog <project-path> <task> [--brave]")
+        println("Usage: kotlin-ai-agent-koog <project-path> <task> [--brave] [--user <userId>]")
         println("Example: kotlin-ai-agent-koog /path/to/project \"Add a function to calculate fibonacci numbers\"")
         println("\nOptions:")
-        println("  --brave    Enable brave mode (auto-approve all operations)")
+        println("  --brave         Enable brave mode (auto-approve all operations)")
+        println("  --user <userId> Set user ID for Langfuse tracking (can also use LANGFUSE_USER_ID env var)")
         return
     }
 
     val projectPath = args[0]
     val task = args[1]
-    val braveMode = args.getOrNull(2) == "--brave"
+
+    // Parse optional flags
+    var braveMode = false
+    var userIdFromArgs: String? = null
+
+    var i = 2
+    while (i < args.size) {
+        when (args[i]) {
+            "--brave" -> braveMode = true
+            "--user" -> {
+                if (i + 1 < args.size) {
+                    userIdFromArgs = args[i + 1]
+                    i++ // Skip next arg since it's the user ID value
+                }
+            }
+        }
+        i++
+    }
 
     // Read OpenAI API key
     val apiKey = getEnvOrDotEnv("OPENAI_API_KEY")
@@ -56,13 +74,17 @@ suspend fun main(args: Array<String>) {
     val langfuseSecretKey = getEnvOrDotEnv("LANGFUSE_SECRET_KEY")
     val langfuseBaseUrl = getEnvOrDotEnv("LANGFUSE_BASE_URL")
 
+    // Determine user ID: prioritize CLI arg, fall back to env var
+    val userId = userIdFromArgs ?: getEnvOrDotEnv("LANGFUSE_USER_ID")
+
     // Generate a unique session ID for this agent run
     val sessionId = "agent-run-${UUID.randomUUID().toString().take(8)}"
 
     // Check if Langfuse is configured
     val langfuseConfigured = langfusePublicKey != null && langfuseSecretKey != null && langfuseBaseUrl != null
     if (langfuseConfigured) {
-        println("[Observability] Langfuse tracking enabled on host $langfuseBaseUrl - Session ID: $sessionId")
+        val userInfo = userId?.let { " - User ID: $it" } ?: ""
+        println("[Observability] Langfuse tracking enabled on host $langfuseBaseUrl - Session ID: $sessionId$userInfo")
 
         // Configure OpenTelemetry to send traces to Langfuse via OTLP
         // Langfuse accepts OTLP traces at /api/public/otel endpoint
@@ -193,9 +215,10 @@ suspend fun main(args: Array<String>) {
                     langfuseUrl = langfuseBaseUrl,
                     langfusePublicKey = langfusePublicKey,
                     langfuseSecretKey = langfuseSecretKey,
-                    traceAttributes = listOf(
-                        CustomAttribute("langfuse.session.id", sessionId),
-                    )
+                    traceAttributes = buildList {
+                        add(CustomAttribute("langfuse.session.id", sessionId))
+                        userId?.let { add(CustomAttribute("langfuse.user.id", it)) }
+                    }
                 )
             }
         }
