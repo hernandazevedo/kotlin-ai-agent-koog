@@ -125,6 +125,21 @@ Run the agent by providing the project path and task:
 ./gradlew jvmRun --args="/path/to/project 'Your task here'"
 ```
 
+### Interactive Mode (NEW!)
+
+Review and approve changes with visual diff preview before execution:
+
+```bash
+# Using the wrapper script (recommended for interactive mode)
+./run-interactive.sh example-project "Add error handling to Calculator"
+
+# Or run binary directly
+./gradlew installDist
+./build/install/kotlin-ai-agent-koog/bin/kotlin-ai-agent-koog example-project "Your task" --interactive
+```
+
+**Note:** Interactive mode requires stdin. Using `./gradlew jvmRun` directly won't work due to Gradle's stdin handling. See [Troubleshooting Guide](docs/INTERACTIVE_MODE_TROUBLESHOOTING.md).
+
 ### Brave Mode
 
 Enable brave mode to auto-approve all operations (useful for automation):

@@ -56,3 +56,24 @@ kotlin {
         val jvmTest by getting
     }
 }
+
+// Create a task to generate a wrapper script that runs via java -cp
+tasks.register("createRunScript") {
+    dependsOn("jvmJar")
+    doLast {
+        val scriptFile = file("build/bin/kotlin-ai-agent-koog")
+        scriptFile.parentFile.mkdirs()
+
+        val classpath = configurations.getByName("jvmRuntimeClasspath")
+            .files
+            .joinToString(":") { it.absolutePath } +
+            ":" + kotlin.jvm().compilations.getByName("main").output.classesDirs.asPath
+
+        scriptFile.writeText("""#!/bin/bash
+exec java -cp "$classpath" com.agents.MainKt "$@"
+""")
+        scriptFile.setExecutable(true)
+
+        println("Created executable script at: ${scriptFile.absolutePath}")
+    }
+}

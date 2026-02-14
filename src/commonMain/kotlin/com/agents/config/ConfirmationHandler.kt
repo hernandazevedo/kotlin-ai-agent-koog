@@ -7,9 +7,18 @@ package com.agents.config
 interface ConfirmationHandler {
     /**
      * Request confirmation for a file write operation
-     * @return true if the operation is approved, false otherwise
+     * @param path The file path
+     * @param overwrite Whether this operation will overwrite an existing file
+     * @param oldContent The current content of the file (if it exists)
+     * @param newContent The proposed new content
+     * @return FileWriteConfirmation result
      */
-    suspend fun requestFileWriteConfirmation(path: String, overwrite: Boolean): FileWriteConfirmation
+    suspend fun requestFileWriteConfirmation(
+        path: String,
+        overwrite: Boolean,
+        oldContent: String? = null,
+        newContent: String? = null
+    ): FileWriteConfirmation
 }
 
 /**
@@ -26,7 +35,12 @@ sealed class FileWriteConfirmation {
  * Useful for automated scenarios
  */
 class BraveConfirmationHandler : ConfirmationHandler {
-    override suspend fun requestFileWriteConfirmation(path: String, overwrite: Boolean): FileWriteConfirmation {
+    override suspend fun requestFileWriteConfirmation(
+        path: String,
+        overwrite: Boolean,
+        oldContent: String?,
+        newContent: String?
+    ): FileWriteConfirmation {
         return FileWriteConfirmation.Approved
     }
 }
@@ -36,7 +50,12 @@ class BraveConfirmationHandler : ConfirmationHandler {
  * Can be extended to prompt user in interactive scenarios
  */
 class SafeConfirmationHandler : ConfirmationHandler {
-    override suspend fun requestFileWriteConfirmation(path: String, overwrite: Boolean): FileWriteConfirmation {
+    override suspend fun requestFileWriteConfirmation(
+        path: String,
+        overwrite: Boolean,
+        oldContent: String?,
+        newContent: String?
+    ): FileWriteConfirmation {
         // For now, auto-approve but this can be extended with actual user prompts
         // In a real scenario, this would check against rules or prompt the user
         return FileWriteConfirmation.Approved

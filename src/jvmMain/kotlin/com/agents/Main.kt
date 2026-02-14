@@ -10,6 +10,7 @@ import ai.koog.prompt.executor.clients.openai.OpenAIModels
 import ai.koog.prompt.executor.llms.all.simpleOpenAIExecutor
 import com.agents.config.BraveConfirmationHandler
 import com.agents.config.ConfirmationHandler
+import com.agents.config.InteractiveConfirmationHandler
 import com.agents.config.SafeConfirmationHandler
 import com.agents.mcp.McpClient
 import com.agents.mcp.McpToolDiscovery
@@ -36,10 +37,11 @@ fun getEnvOrDotEnv(key: String): String? {
 
 suspend fun main(args: Array<String>) {
     if (args.size < 2) {
-        println("Usage: kotlin-ai-agent-koog <project-path> <task> [--brave] [--user <userId>]")
+        println("Usage: kotlin-ai-agent-koog <project-path> <task> [--brave] [--interactive] [--user <userId>]")
         println("Example: kotlin-ai-agent-koog /path/to/project \"Add a function to calculate fibonacci numbers\"")
         println("\nOptions:")
         println("  --brave         Enable brave mode (auto-approve all operations)")
+        println("  --interactive   Enable interactive mode (show diff and prompt for approval)")
         println("  --user <userId> Set user ID for Langfuse tracking (can also use LANGFUSE_USER_ID env var)")
         return
     }
@@ -49,12 +51,14 @@ suspend fun main(args: Array<String>) {
 
     // Parse optional flags
     var braveMode = false
+    var interactiveMode = false
     var userIdFromArgs: String? = null
 
     var i = 2
     while (i < args.size) {
         when (args[i]) {
             "--brave" -> braveMode = true
+            "--interactive" -> interactiveMode = true
             "--user" -> {
                 if (i + 1 < args.size) {
                     userIdFromArgs = args[i + 1]
@@ -105,11 +109,19 @@ suspend fun main(args: Array<String>) {
     }
 
     // Configure confirmation handler based on mode
-    val confirmationHandler: ConfirmationHandler = if (braveMode) {
-        println("[Brave Mode] Auto-approving all operations")
-        BraveConfirmationHandler()
-    } else {
-        SafeConfirmationHandler()
+    val confirmationHandler: ConfirmationHandler = when {
+        braveMode -> {
+            println("[Brave Mode] Auto-approving all operations")
+            BraveConfirmationHandler()
+        }
+        interactiveMode -> {
+            println("[Interactive Mode] Will prompt for approval with diff preview")
+            InteractiveConfirmationHandler(useColors = true)
+        }
+        else -> {
+            println("[Safe Mode] Using default safe confirmation handler")
+            SafeConfirmationHandler()
+        }
     }
 
     // Initialize file system tools with confirmation handler

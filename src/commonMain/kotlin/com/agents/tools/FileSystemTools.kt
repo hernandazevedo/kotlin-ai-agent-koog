@@ -137,8 +137,13 @@ class CreateFileTool(
             return buildErrorResult("Content validation failed: ${contentValidation.errorMessage}")
         }
 
-        // Request confirmation
-        return when (val confirmation = confirmationHandler.requestFileWriteConfirmation(args.path, overwrite = false)) {
+        // Request confirmation with content preview
+        return when (val confirmation = confirmationHandler.requestFileWriteConfirmation(
+            path = args.path,
+            overwrite = false,
+            oldContent = null,
+            newContent = args.content
+        )) {
             is FileWriteConfirmation.Approved -> {
                 performFileWrite(args)
             }
@@ -213,8 +218,16 @@ class EditFileTool(
             return buildErrorResult("Content validation failed: ${contentValidation.errorMessage}")
         }
 
-        // Request confirmation (this is an overwrite operation)
-        return when (val confirmation = confirmationHandler.requestFileWriteConfirmation(args.path, overwrite = true)) {
+        // Read current content for diff preview
+        val oldContent = fileSystem.readFile(args.path).getOrNull()
+
+        // Request confirmation (this is an overwrite operation) with diff preview
+        return when (val confirmation = confirmationHandler.requestFileWriteConfirmation(
+            path = args.path,
+            overwrite = true,
+            oldContent = oldContent,
+            newContent = args.content
+        )) {
             is FileWriteConfirmation.Approved -> {
                 performFileEdit(args)
             }

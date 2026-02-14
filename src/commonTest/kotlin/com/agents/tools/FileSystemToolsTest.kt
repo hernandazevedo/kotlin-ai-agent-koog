@@ -44,7 +44,12 @@ class MockFileSystemProvider(
 class MockConfirmationHandler(
     private val shouldApprove: Boolean = true
 ) : ConfirmationHandler {
-    override suspend fun requestFileWriteConfirmation(path: String, overwrite: Boolean): FileWriteConfirmation {
+    override suspend fun requestFileWriteConfirmation(
+        path: String,
+        overwrite: Boolean,
+        oldContent: String?,
+        newContent: String?
+    ): FileWriteConfirmation {
         return if (shouldApprove) FileWriteConfirmation.Approved else FileWriteConfirmation.Rejected
     }
 }
